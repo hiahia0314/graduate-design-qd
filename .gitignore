@@ -1,0 +1,16 @@
+.DS_Store
+.idea/
+.venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# Generated backtest and demo artifacts
+output/
+output_*/
+
+# Local tooling and coverage artifacts
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/

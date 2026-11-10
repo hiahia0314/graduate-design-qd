@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-11-10T08:48:37.543465+00:00",
+  "source": "CSI official constituents; AKShare Sina stock daily; Tencent index daily",
+  "akshare_version": "1.20.1",
+  "period": [
+    "20160101",
+    "20251231"
+  ],
+  "universe": "Current CSI 300 constituents at download time",
+  "index_code": "000300",
+  "constituents": 300,
+  "membership_dates": [
+    "2026-11-09"
+  ],
+  "failures": 0,
+  "raw_rows": 641528,
+  "qfq_rows": 641527,
+  "limitations": [
+    "not point-in-time historical constituents",
+    "current-snapshot QFQ series; not execution prices",
+    "no historical suspension/ST/limit or corporate-action tables",
+    "index volume_lots is in lots, not turnover amount"
+  ],
+  "status": "complete"
+}

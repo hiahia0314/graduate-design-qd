@@ -1,0 +1,19 @@
+data:
+  source: "csv_daily"
+  path: "data/sample_bars.csv"
+
+backtest:
+  start: "2026-01-05"
+  end: "2026-01-30"
+  initial_cash: 1000000
+
+strategy:
+  name: "top_momentum"
+  top_n: 2
+
+costs:
+  commission_rate: 0
+  minimum_commission: 0
+  stamp_duty_rate: 0
+  slippage: 0
+

@@ -1,0 +1,28 @@
+{
+  "members": 300,
+  "panels": {
+    "raw": {
+      "rows": 641528,
+      "symbols": 300,
+      "start": "2016-01-04",
+      "end": "2025-12-31"
+    },
+    "qfq": {
+      "rows": 641527,
+      "symbols": 300,
+      "start": "2016-01-04",
+      "end": "2025-12-31"
+    }
+  },
+  "raw_only_keys": 1,
+  "qfq_only_keys": 0,
+  "raw_only_records": [
+    {
+      "date": "2016-01-14",
+      "symbol": "000002"
+    }
+  ],
+  "qfq_only_records": [],
+  "index_rows": 2430,
+  "historical_membership_available": false
+}
