@@ -37,18 +37,25 @@ def evaluate(
     for record in records:
         if not record.total_equity.is_finite() or record.total_equity <= 0:
             raise ValueError('Performance requires positive finite equity')
+
     values = [r.total_equity for r in records]
     returns = [float(b / a - 1) for a, b in zip(values, values[1:])]
     periods = len(returns)
     total = values[-1] / values[0] - 1 if values else None
+
+   # 最大回测
     peak = values[0] if values else None
     drawdowns = []
     for value in values:
         peak = max(peak, value)
         drawdowns.append(float(1 - value / peak))
+
+    # 计算年化收益率，夏普比率
     daily_rf = (1 + config.annual_risk_free_rate) ** (1 / config.periods_per_year) - 1
     volatility = stdev(returns) if periods > 1 else None
     by_date = {r.timestamp: r for r in records}
+
+   # 换手率和交易成本
     previous_equity = {dates[i]: values[i-1] for i in range(1, len(dates))}
     traded = {d: Decimal('0') for d in dates}
     costs = Decimal('0')
@@ -58,7 +65,11 @@ def evaluate(
         traded[fill.timestamp] += fill.price * fill.quantity
         costs += fill.total_cost
     turnover = [float(traded[d] / previous_equity[d] / 2) for d in dates[1:]]
+
+    # 仓位暴露
     exposures = [float(r.market_value / r.total_equity) for r in records]
+
+    # 集中度
     holdings_by_date = {d: [] for d in dates}
     for holding in result.holdings:
         if holding.timestamp not in holdings_by_date:
@@ -67,6 +78,7 @@ def evaluate(
     concentrations = []
     for record in records:
         held = holdings_by_date[record.timestamp]
+        #  完整性门控：持仓市值之和是否恰好等于 record.market_value
         complete = sum((h.market_value for h in held), Decimal('0')) == record.market_value
         industry_complete = complete and all(h.industry for h in held)
         industries = {}

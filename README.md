@@ -39,7 +39,7 @@ output/equity.csv
 
 ## 示例数据
 
-`data/sample_bars.csv` 包含 6 只虚构 A 股、20 个交易日的日线数据：
+`data/samples/sample_bars.csv` 包含 6 只虚构 A 股、20 个交易日的日线数据：
 
 ```text
 symbol,date,open,high,low,close,volume
@@ -79,8 +79,8 @@ symbol,date,open,high,low,close,volume
 
 ## 沪深300真实行情数据包
 
-`data/raw/akshare/` 已改用沪深300原始数据包（2016—2025年），原中证500数据归档到
-`data/archive/`。数据文件、单位、下载方式与限制见 [数据说明](data/README.md)。
+`data/raw/akshare/` 已改用沪深300原始数据包（2016—2025年），原始历史分卷、来源证据和质量审计已分别整理到
+`data/archives/`、`data/evidence/`、`data/reviews/`。数据文件、单位、下载方式与限制见 [数据说明](data/README.md)。
 本数据包的股票池仍是下载时的当前成员快照，正式历史策略验证需要另补历史成分股；
 演示入口默认使用的虚构 `sample_bars.csv` 保持不变。
 
@@ -138,3 +138,56 @@ CSV源支持可选的 `industry` 和 `exclusion_reason` 列；它不会自动识
 年化参数可用 `PerformanceConfig(periods_per_year=252, annual_risk_free_rate=0.0)` 配置，
 通过 `export_result(..., performance_config=config)` 传入，口径和参数会保存在报告中。
 当前没有现金流入/流出模型，收益计算不适用于中途追加本金的账户。
+
+## 真实数据接入与研究区间
+
+新增 `ParquetDailyDataSource` 接入不复权Parquet行情，校验股票代码、重复记录、日期和OHLCV；
+前复权价格不能作为撮合价格。数据依赖安装方式为 `pip install -e '.[market-data]'`。
+
+研究区间已确认为2017—2021年训练、2022—2023年验证调参、2024—2025年最终样本外回测。
+执行 `python prepare_dataset.py` 检查和准备年度供应商面板，输出至
+`data/processed/csi300_2017_2025_v1`。历史成员按已确认的供应商口径采用。
+`ready` 仅代表面板准备通过；标签和完整回测能力分别记录，详见 `data/README.md`。
+
+数据通过检查后，可用 `src.research.dataset.PreparedSplit(directory, 'train')` 读取市场行情、
+历史股票池和基准；最终测试需显式传入 `allow_final_test=True`。文件内容以哈希核验，准备完成的
+版本禁止原地覆盖。该入口约束是开发保护，不是阻止任意代码直接读取文件的权限系统。
+
+未来训练样本使用 `select_supervised_samples`，通过实际 `label_end` 去除跨越分段终点的标签。
+标签定义和预测周期尚未确定，不默认生成收益标签；标准化、缺失值处理及因子选择必须只在
+训练集拟合。验证集用于模型选择，最终测试集不得参与这些决策。供应商调整价以
+`research_provider_adjusted.parquet` 单独保存，可用 `PreparedSplit.research_panel()` 读取，
+不宣称是前复权或已验证的时点可得特征。`market_source()` 保留停牌、未知状态和限价限制；
+`BacktestEngine` 在成交前后检查持仓是否涉及未记账公司行动，并抛出明确错误。
+常规分红送转记账亦尚未实现，因此这些事件也受保护；不能用面板就绪宣称完整回测就绪。
+
+## 用正式面板运行回测
+
+正式数据入口为 `run_research_backtest.py`，原 `run_backtest.py` 保留虚构CSV演示用途。
+
+```bash
+# 默认训练段，输出目录必须为空或尚不存在
+.venv/bin/python run_research_backtest.py --output output_research_train
+
+# 指定训练段内区间，验证接线
+.venv/bin/python run_research_backtest.py \
+  --split train --start 2017-01-03 --end 2017-01-10 \
+  --output output_research_check
+```
+
+入口默认读取 `data/processed/csi300_2017_2025_v1`，可用 `--dataset` 替换。
+当前接入的是既有当日涨幅基线：用当日供应商调整价的 `close/open - 1` 排名，
+经每日历史成员筛选后等权持有 `--top-n`（默认2）只股票，收盘决策、次日原价开盘撮合。
+这是框架接线基线，不是训练好的策略。原价源保留退池证券用于持仓估值及退出。
+
+`--exposure` 控制固定仓位，`--initial-cash` 控制初始资金。每次运行从现金开始，
+不继承其他区间的持仓。费用沿用框架零默认值，可通过 `--commission-rate`、
+`--minimum-commission`、`--stamp-duty-rate`、`--slippage` 显式设置；固定费用不代表历史费率表。
+
+成功运行导出 `result.json`、带沪深300基准比较的 `performance.json`、
+`target_signals.csv` 和 `run_manifest.json`。清单记录数据版本、数据清单哈希、区间、
+策略参数、费用及运行状态；最后一个交易日的待执行订单保留，不强行平仓。
+
+公司行动检查在区间过滤后仍保留。遇到未记账事件影响持仓，退出码为2，
+清单记录 `status=blocked` 及具体原因，不导出该次实验的收益报告，不自动绕过事件。
+正式测试段须同时指定 `--split test --allow-final-test`；仅为接线检查无需使用测试集。

@@ -1,0 +1,43 @@
+{
+  "dataset_id": "csi300_2017_2025_v1",
+  "index_code": "000300",
+  "benchmark": "data/market/benchmark.parquet",
+  "historical_membership": "data/universe/membership.parquet",
+  "expected_members_per_day": 300,
+  "require_historical_membership": true,
+  "output": "data/processed/csi300_2017_2025_v1",
+  "splits": [
+    {
+      "name": "train",
+      "start": "2017-01-01",
+      "end": "2021-12-31"
+    },
+    {
+      "name": "validation",
+      "start": "2022-01-01",
+      "end": "2023-12-31"
+    },
+    {
+      "name": "test",
+      "start": "2024-01-01",
+      "end": "2025-12-31"
+    }
+  ],
+  "label_horizon_sessions": null,
+  "label_definition": null,
+  "test_policy": "Do not use final test for factor selection, preprocessing fit or hyperparameter tuning.",
+  "data_layout": "annual_provider_panels",
+  "daily_prices": "data/market/daily",
+  "corporate_actions": "data/corporate_actions",
+  "trading_constraints": "data/market/constraints/no_daily_limit.json",
+  "membership_acceptance": "provider_data_accepted_by_user",
+  "trading_calendar": "data/market/trading_calendar.parquet",
+  "preparation_policies": {
+    "missing_member_prices": "block",
+    "nonmember_empty_rows": "audit_and_omit",
+    "unknown_trading_or_limits": "retain_and_block_execution",
+    "corporate_actions": "guard_affected_holdings_until_accounted",
+    "research_basis": "provider_adjusted",
+    "labels": "not_generated"
+  }
+}

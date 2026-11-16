@@ -22,13 +22,14 @@ class EquityAccounting(Accounting):
             raise ValueError("Initial cash must be positive and finite")
         self._cash = initial_cash
         self.positions: dict[str, Position] = {}
-        self.equity_records: list[EquityRecord] = []
+        self.equity_records: list[EquityRecord] = [] # 审计轨迹
         self._last_prices: dict[str, Decimal] = {}
 
     @property
     def cash(self) -> Decimal:
         return self._cash
 
+    # 交易写入账户
     def on_fill(self, fill: Fill) -> None:
         if isinstance(fill.quantity, bool) or not isinstance(fill.quantity, int) or fill.quantity <= 0:
             raise ValueError("Fill quantity must be a positive integer")
@@ -36,6 +37,7 @@ class EquityAccounting(Accounting):
             raise ValueError("Fill price must be positive and finite")
         if any(not cost.is_finite() or cost < 0 for cost in (fill.commission, fill.stamp_duty)):
             raise ValueError("Fill costs must be non-negative and finite")
+
         gross = fill.price * fill.quantity
         if fill.side is Side.BUY and gross + fill.total_cost > self._cash:
             raise ValueError("Fill would make cash negative")
@@ -47,6 +49,7 @@ class EquityAccounting(Accounting):
                 raise ValueError("Sell costs would make cash negative")
         position = self.positions.setdefault(fill.symbol, Position(fill.symbol))
 
+        # 加权平均成本法更新 average_price
         if fill.side is Side.BUY:
             new_quantity = position.quantity + fill.quantity
             position.average_price = (
@@ -62,15 +65,19 @@ class EquityAccounting(Accounting):
             position.average_price = Decimal("0")
             del self.positions[fill.symbol]
 
+    # 收盘估值
     def mark(self, market: MarketSnapshot) -> AccountSnapshot:
+        # 更新估值缓存
         self._last_prices.update(
             {symbol: bar.close for symbol, bar in market.bars.items()}
         )
+        # 检查缺失价格
         missing_prices = set(self.positions) - set(self._last_prices)
         if missing_prices:
             symbols = ", ".join(sorted(missing_prices))
             raise ValueError(f"No current or historical close price for: {symbols}")
 
+        # 算市值和总权益
         market_value = sum(
             self._last_prices[symbol] * position.quantity
             for symbol, position in self.positions.items()

@@ -10,6 +10,9 @@ import requests
 import akshare as ak
 
 ROOT = Path(__file__).resolve().parents[1]
+import sys
+sys.path.insert(0,str(ROOT))
+from src.data_sources.sina_history import safe_sina_daily
 START, END = '20160101', '20251231'
 URL = 'https://oss-ch.csindex.com.cn/static/html/csindex/public/uploads/file/autofile/cons/000300cons.xls'
 original_get = requests.get
@@ -72,7 +75,7 @@ def main():
             for attempt in range(3):
                 try:
                     ticker=('sh' if symbol.startswith('6') else 'sz')+symbol
-                    df=ak.stock_zh_a_daily(symbol=ticker,start_date=START,end_date=END,adjust='' if adjust=='raw' else adjust)
+                    df=safe_sina_daily(symbol=ticker,start_date=START,end_date=END,adjust='' if adjust=='raw' else adjust)
                     df['symbol']=symbol
                     validate(df).to_parquet(path,index=False)
                     records.append(dict(symbol=symbol,adjust=adjust,rows=len(df),status='downloaded',error=''))

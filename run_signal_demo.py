@@ -28,7 +28,7 @@ def main():
         risk_control = StaticRiskControl(RiskLimits(
             max_stock_weight=args.max_stock_weight, max_holdings=args.max_holdings,
         ))
-    source = CsvDailyDataSource(ROOT / "data/sample_bars.csv")
+    source = CsvDailyDataSource(ROOT / "data/samples/sample_bars.csv")
     # Deliberately synthetic: do not use bar availability as real index membership.
     universe = HistoricalUniverse({m.timestamp.date(): set(m.bars) for m in source.snapshots()})
 

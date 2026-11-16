@@ -61,12 +61,19 @@ class BacktestEngine:
             for symbol, bar in market.bars.items():
                 if bar.timestamp != market.timestamp or bar.symbol != symbol:
                     raise ValueError("Bar identity and timestamp must match its market snapshot")
+
             previous_date = market.timestamp.date()
+            guard = getattr(self.data_source, 'check_positions', None)
+            if guard is not None:
+                guard(market.timestamp, self.accounting.positions)
+            ## 撮合订单 用当天开盘价执行"昨天收盘后 submit 的订单"。
             fills = list(self.broker.match(market, self.accounting.cash))
             for fill in fills:
                 self.accounting.on_fill(fill)
             result.fills.extend(fills)
 
+            if guard is not None:
+                guard(market.timestamp, self.accounting.positions)
             account = self.accounting.mark(market)
             for symbol, position in account.positions.items():
                 value = account.position_values.get(symbol)
@@ -78,6 +85,7 @@ class BacktestEngine:
                         symbol not in market.bars,
                     ))
             target = self.strategy.on_day(market)
+            ## 风控消减目标
             if self.risk_control is not None:
                 decision = self.risk_control.evaluate(target, account, market)
                 result.risk_decisions.append(decision)

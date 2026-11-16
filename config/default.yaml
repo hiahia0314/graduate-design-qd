@@ -1,6 +1,6 @@
 data:
   source: "csv_daily"
-  path: "data/sample_bars.csv"
+  path: "data/samples/sample_bars.csv"
 
 backtest:
   start: "2026-01-05"

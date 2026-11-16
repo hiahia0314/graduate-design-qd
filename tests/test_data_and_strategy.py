@@ -5,7 +5,7 @@ from src.data_sources import CsvDailyDataSource
 from src.strategies import TopMomentumStrategy
 
 
-DATA = Path(__file__).parents[1] / "data" / "sample_bars.csv"
+DATA = Path(__file__).parents[1] / "data" / "samples" / "sample_bars.csv"
 
 
 def test_csv_source_yields_complete_daily_cross_sections() -> None:

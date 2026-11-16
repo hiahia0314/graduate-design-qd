@@ -19,7 +19,7 @@ from src.core.reporting import export_result
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="A股日频截面选股回测示例")
-    parser.add_argument("--data", default="data/sample_bars.csv")
+    parser.add_argument("--data", default="data/samples/sample_bars.csv")
     parser.add_argument("--output", default="output")
     parser.add_argument("--initial-cash", type=Decimal, default=Decimal("1000000"))
     parser.add_argument("--top-n", type=int, default=2)
