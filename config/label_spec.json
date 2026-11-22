@@ -1,0 +1,5 @@
+{
+  "version": "open5-excess-state-v1",
+  "holding_sessions": 5,
+  "state_threshold": 0.01
+}

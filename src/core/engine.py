@@ -10,6 +10,8 @@ from src.framework.models import EquityRecord, ExposureSignal, Fill, HoldingReco
 
 @dataclass(slots=True)
 class BacktestResult:
+    price_basis: str = "qfq"
+    quantity_unit: str = "synthetic_adjusted_unit"
     targets: list[TargetPortfolio] = field(default_factory=list)
     orders: list[Order] = field(default_factory=list)
     fills: list[Fill] = field(default_factory=list)
@@ -49,6 +51,8 @@ class BacktestEngine:
         self.risk_control = risk_control
 
     def run(self) -> BacktestResult:
+        if getattr(self.data_source, 'price_basis', 'qfq') != 'qfq':
+            raise ValueError('Backtest execution requires forward-adjusted (qfq) prices')
         result = BacktestResult()
         limits = getattr(self.risk_control, "limits", None)
         if limits is not None and is_dataclass(limits):
@@ -63,17 +67,12 @@ class BacktestEngine:
                     raise ValueError("Bar identity and timestamp must match its market snapshot")
 
             previous_date = market.timestamp.date()
-            guard = getattr(self.data_source, 'check_positions', None)
-            if guard is not None:
-                guard(market.timestamp, self.accounting.positions)
             ## 撮合订单 用当天开盘价执行"昨天收盘后 submit 的订单"。
             fills = list(self.broker.match(market, self.accounting.cash))
             for fill in fills:
                 self.accounting.on_fill(fill)
             result.fills.extend(fills)
 
-            if guard is not None:
-                guard(market.timestamp, self.accounting.positions)
             account = self.accounting.mark(market)
             for symbol, position in account.positions.items():
                 value = account.position_values.get(symbol)
@@ -85,6 +84,9 @@ class BacktestEngine:
                         symbol not in market.bars,
                     ))
             target = self.strategy.on_day(market)
+            if target is None:
+                # No decision today: keep units, but continue daily matching and marking.
+                continue
             ## 风控消减目标
             if self.risk_control is not None:
                 decision = self.risk_control.evaluate(target, account, market)

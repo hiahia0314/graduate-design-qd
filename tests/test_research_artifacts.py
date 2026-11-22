@@ -1,3 +1,4 @@
+from src.framework.models import CostModel
 import json
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -24,7 +25,7 @@ def test_signal_to_fill_trace_survives_export_and_cash_target(tmp_path):
     class Source:
         def snapshots(self):
             return snapshots
-    result = BacktestEngine(Source(), strategy, TargetWeightPortfolio(), NextOpenBroker(), EquityAccounting(Decimal("10000"))).run()
+    result = BacktestEngine(Source(), strategy, TargetWeightPortfolio(), NextOpenBroker(CostModel(commission_rate=Decimal(0), slippage=Decimal(0))), EquityAccounting(Decimal("10000"))).run()
     assert list(result.targets[0].weights) == ["A"]
     assert list(result.targets[1].weights) == ["B"]
     export_result(result, tmp_path)

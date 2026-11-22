@@ -77,11 +77,9 @@ class EquityAccounting(Accounting):
             symbols = ", ".join(sorted(missing_prices))
             raise ValueError(f"No current or historical close price for: {symbols}")
 
-        # 算市值和总权益
-        market_value = sum(
-            self._last_prices[symbol] * position.quantity
-            for symbol, position in self.positions.items()
-        )
+        position_values = {symbol: self._last_prices[symbol] * position.quantity
+                           for symbol, position in self.positions.items()}
+        market_value = sum(position_values.values(), Decimal('0'))
         total_equity = self._cash + market_value
         self.equity_records.append(
             EquityRecord(
@@ -96,6 +94,5 @@ class EquityAccounting(Accounting):
             cash=self._cash,
             total_equity=total_equity,
             positions=deepcopy(self.positions),
-            position_values={symbol: self._last_prices[symbol] * position.quantity
-                             for symbol, position in self.positions.items()},
+            position_values=position_values,
         )

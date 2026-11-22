@@ -12,8 +12,8 @@ strategy:
   top_n: 2
 
 costs:
-  commission_rate: 0
+  commission_rate: 0.0003
   minimum_commission: 0
   stamp_duty_rate: 0
-  slippage: 0
+  slippage: 0.002  # 0.2%; sensitivity range 0.001–0.003
 

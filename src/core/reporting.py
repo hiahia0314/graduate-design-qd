@@ -33,7 +33,7 @@ def export_result(result: BacktestResult, directory: str | Path, *,
     performance = evaluate(result, performance_config, benchmark)
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
-    payload = {"schema_version": 1, "result": asdict(result)}
+    payload = {"schema_version": 2, "result": asdict(result)}
     (directory / "result.json").write_text(
         json.dumps(payload, default=_encode, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
         encoding="utf-8",

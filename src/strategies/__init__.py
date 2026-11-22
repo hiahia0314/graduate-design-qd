@@ -1,6 +1,7 @@
 """Built-in demonstration strategies."""
 
-from .top_momentum import TopMomentumStrategy
 from .signal_strategy import SignalStrategy
+from .moving_average import MovingAverageStrategy
+from .momentum import MomentumStrategy
 
-__all__ = ["TopMomentumStrategy", "SignalStrategy"]
+__all__ = [ "SignalStrategy", "MovingAverageStrategy", "MomentumStrategy"]

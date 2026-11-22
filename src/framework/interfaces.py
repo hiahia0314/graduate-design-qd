@@ -17,8 +17,8 @@ class DataSource(ABC):
 
 class Strategy(ABC):
     @abstractmethod
-    def on_day(self, snapshot: MarketSnapshot) -> TargetPortfolio:
-        """Create one target portfolio after the daily close."""
+    def on_day(self, snapshot: MarketSnapshot) -> TargetPortfolio | None:
+        """Create a close target, or None to hold units without rebalancing."""
 
 
 class Portfolio(ABC):

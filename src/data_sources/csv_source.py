@@ -13,7 +13,9 @@ from src.framework.models import Bar, MarketSnapshot, SecurityMetadata
 
 
 class CsvDailyDataSource(DataSource):
-    """Load daily bars and group all stocks by trading date."""
+    """Load qfq bars (or synthetic test prices) grouped by trading date."""
+
+    price_basis = "qfq"
 
     def __init__(
         self,

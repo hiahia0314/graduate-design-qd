@@ -1,11 +1,11 @@
 {
-  "dataset_id": "csi300_2017_2025_v1",
+  "dataset_id": "csi300_2017_2025_v5_qfq",
   "index_code": "000300",
   "benchmark": "data/market/benchmark.parquet",
   "historical_membership": "data/universe/membership.parquet",
   "expected_members_per_day": 300,
   "require_historical_membership": true,
-  "output": "data/processed/csi300_2017_2025_v1",
+  "output": "data/processed/csi300_2017_2025_v5_qfq",
   "splits": [
     {
       "name": "train",
@@ -28,7 +28,6 @@
   "test_policy": "Do not use final test for factor selection, preprocessing fit or hyperparameter tuning.",
   "data_layout": "annual_provider_panels",
   "daily_prices": "data/market/daily",
-  "corporate_actions": "data/corporate_actions",
   "trading_constraints": "data/market/constraints/no_daily_limit.json",
   "membership_acceptance": "provider_data_accepted_by_user",
   "trading_calendar": "data/market/trading_calendar.parquet",
@@ -36,8 +35,8 @@
     "missing_member_prices": "block",
     "nonmember_empty_rows": "audit_and_omit",
     "unknown_trading_or_limits": "retain_and_block_execution",
-    "corporate_actions": "guard_affected_holdings_until_accounted",
-    "research_basis": "provider_adjusted",
+    "research_basis": "qfq_fixed_last_valid_factor",
     "labels": "not_generated"
-  }
+  },
+  "execution_price_basis": "qfq"
 }

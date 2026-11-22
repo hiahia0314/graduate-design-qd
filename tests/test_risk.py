@@ -1,3 +1,4 @@
+from src.framework.models import CostModel
 from dataclasses import replace
 from datetime import datetime
 from decimal import Decimal as D
@@ -66,7 +67,7 @@ def test_risk_approved_target_drives_actual_orders_and_report(tmp_path):
         def snapshots(self): return [first,second]
     class Strategy:
         def on_day(self,m): return TargetPortfolio(str(m.timestamp),'s',m.timestamp,{'A':D('1')})
-    r = BacktestEngine(Source(),Strategy(),TargetWeightPortfolio(),NextOpenBroker(),EquityAccounting(D('10000')),
+    r = BacktestEngine(Source(),Strategy(),TargetWeightPortfolio(),NextOpenBroker(CostModel(commission_rate=D(0), slippage=D(0))),EquityAccounting(D('10000')),
                        risk_control=StaticRiskControl(RiskLimits(max_stock_weight=D('.2')))).run()
     assert r.fills[0].quantity == 200
     assert r.fills[0].target_id == r.risk_decisions[0].output_target.target_id

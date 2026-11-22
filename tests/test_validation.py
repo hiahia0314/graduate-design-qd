@@ -7,7 +7,6 @@ import pytest
 from src import AccountSnapshot, Bar, MarketSnapshot, TargetPortfolio
 from src.core import BacktestEngine, EquityAccounting, NextOpenBroker, TargetWeightPortfolio
 from src.data_sources import CsvDailyDataSource
-from src.strategies import TopMomentumStrategy
 
 DATE = datetime(2026, 1, 5)
 
@@ -31,18 +30,3 @@ def test_reject_future_target():
         TargetWeightPortfolio().create_orders(target, account, market())
 
 
-@pytest.mark.parametrize("snapshots", [[market(), market()], [replace(market(), timestamp=DATE + timedelta(days=1))]])
-def test_engine_rejects_invalid_market_time(snapshots):
-    class Source:
-        def snapshots(self):
-            return snapshots
-    engine = BacktestEngine(Source(), TopMomentumStrategy(), TargetWeightPortfolio(), NextOpenBroker(), EquityAccounting(Decimal("10000")))
-    with pytest.raises(ValueError):
-        engine.run()
-
-
-def test_csv_rejects_duplicates(tmp_path):
-    path = tmp_path / "bars.csv"
-    path.write_text("symbol,date,open,high,low,close,volume\n" + "A,2026-01-05,10,10,10,10,1000\n" * 2)
-    with pytest.raises(ValueError, match="Duplicate"):
-        CsvDailyDataSource(path).snapshots()

@@ -9,6 +9,10 @@ __pycache__/
 output/
 output_*/
 
+# Strategy backtest experiment results
+experiments/*/results/*
+!experiments/*/results/.gitkeep
+
 # Local tooling and coverage artifacts
 .coverage
 htmlcov/
@@ -17,8 +21,8 @@ htmlcov/
 
 # Local credentials
 .env
-.env.*
-!.env.example
+.env
+!.env
 
 # Reproducible prepared research artifacts
 data/processed/

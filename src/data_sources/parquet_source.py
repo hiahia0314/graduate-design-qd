@@ -1,4 +1,4 @@
-"""Typed Parquet market data; adjusted research prices never enter execution."""
+"""Typed Parquet forward-adjusted prices for synthetic-unit execution."""
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -51,10 +51,11 @@ def read_panel(path: str | Path) -> pd.DataFrame:
 class ParquetDailyDataSource(DataSource):
     def __init__(self, path: str | Path, *, price_basis: str,
                  start: datetime | None = None, end: datetime | None = None):
-        if price_basis != 'raw' or 'qfq' in Path(path).stem.lower():
-            raise ValueError('Execution requires raw unadjusted prices')
+        if price_basis != 'qfq':
+            raise ValueError('Execution requires forward-adjusted (qfq) prices')
         if start is not None and end is not None and start > end:
             raise ValueError('start must not be after end')
+        self.price_basis = price_basis
         self.path, self.start, self.end = Path(path), start, end
 
     def snapshots(self):

@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from src import Bar, MarketSnapshot, Order, Position, Side
 from src.core import EquityAccounting, NextOpenBroker
+from src.framework.models import CostModel
 
 
 DATE = datetime(2026, 1, 6)
@@ -22,7 +23,7 @@ def test_broker_executes_sells_before_buys() -> None:
         DATE,
         {"SELL.SH": make_bar("SELL.SH", "20"), "BUY.SZ": make_bar("BUY.SZ", "10")},
     )
-    broker = NextOpenBroker()
+    broker = NextOpenBroker(CostModel(commission_rate=Decimal(0), slippage=Decimal(0)))
     broker.submit(
         [
             make_order("BUY-1", "BUY.SZ", Side.BUY, 100),
@@ -41,7 +42,7 @@ def test_broker_scales_buys_proportionally_without_negative_cash() -> None:
         DATE,
         {"A.SZ": make_bar("A.SZ", "10"), "B.SH": make_bar("B.SH", "10")},
     )
-    broker = NextOpenBroker()
+    broker = NextOpenBroker(CostModel(commission_rate=Decimal(0), slippage=Decimal(0)))
     broker.submit(
         [
             make_order("A", "A.SZ", Side.BUY, 1000),
@@ -57,7 +58,7 @@ def test_broker_scales_buys_proportionally_without_negative_cash() -> None:
 
 def test_accounting_updates_cash_positions_and_daily_equity() -> None:
     market = MarketSnapshot(DATE, {"A.SZ": make_bar("A.SZ", "10")})
-    broker = NextOpenBroker()
+    broker = NextOpenBroker(CostModel(commission_rate=Decimal(0), slippage=Decimal(0)))
     broker.submit([make_order("A", "A.SZ", Side.BUY, 100)])
     fill = broker.match(market, Decimal("10000"))[0]
     accounting = EquityAccounting(Decimal("10000"))
@@ -72,7 +73,7 @@ def test_accounting_updates_cash_positions_and_daily_equity() -> None:
 
 def test_accounting_uses_last_close_when_held_symbol_has_no_current_bar() -> None:
     first_market = MarketSnapshot(DATE, {"A.SZ": make_bar("A.SZ", "10")})
-    broker = NextOpenBroker()
+    broker = NextOpenBroker(CostModel(commission_rate=Decimal(0), slippage=Decimal(0)))
     broker.submit([make_order("A", "A.SZ", Side.BUY, 100)])
     fill = broker.match(first_market, Decimal("10000"))[0]
     accounting = EquityAccounting(Decimal("10000"))
@@ -90,7 +91,7 @@ def test_accounting_uses_last_close_when_held_symbol_has_no_current_bar() -> Non
 def test_broker_rejects_same_day_execution_without_consuming_order():
     import pytest
     from dataclasses import replace
-    broker = NextOpenBroker()
+    broker = NextOpenBroker(CostModel(commission_rate=Decimal(0), slippage=Decimal(0)))
     order = replace(make_order("A", "A.SZ", Side.BUY, 100), timestamp=DATE)
     broker.submit([order])
     with pytest.raises(ValueError, match="later trading date"):
@@ -117,7 +118,7 @@ def test_accounting_rejects_overdraw_and_oversell_atomically():
 def test_blocked_orders_cancel_and_do_not_consume_buy_budget():
     from dataclasses import replace
     from src.framework.models import OrderStatus
-    broker = NextOpenBroker()
+    broker = NextOpenBroker(CostModel(commission_rate=Decimal(0), slippage=Decimal(0)))
     broker.submit([
         make_order("blocked", "A", Side.BUY, 100),
         make_order("ok", "B", Side.BUY, 100),
@@ -139,7 +140,7 @@ def test_blocked_orders_cancel_and_do_not_consume_buy_budget():
 
 def test_partial_fill_cancels_remainder_with_quantity_conservation():
     from src.framework.models import OrderStatus
-    broker = NextOpenBroker()
+    broker = NextOpenBroker(CostModel(commission_rate=Decimal(0), slippage=Decimal(0)))
     broker.submit([make_order("a", "A", Side.BUY, 1000)])
     broker.match(MarketSnapshot(DATE, {"A": make_bar("A", "10")}), Decimal("2500"))
     outcome = broker.outcomes[0]
@@ -151,7 +152,7 @@ def test_partial_fill_cancels_remainder_with_quantity_conservation():
 
 def test_sell_block_does_not_release_cash_for_buys():
     from dataclasses import replace
-    broker = NextOpenBroker()
+    broker = NextOpenBroker(CostModel(commission_rate=Decimal(0), slippage=Decimal(0)))
     broker.submit([make_order("sell", "A", Side.SELL, 100), make_order("buy", "B", Side.BUY, 100)])
     market = MarketSnapshot(DATE, {
         "A": replace(make_bar("A", "10"), sell_block_reason="suspended_at_open"),
@@ -160,3 +161,15 @@ def test_sell_block_does_not_release_cash_for_buys():
     assert broker.match(market, Decimal("0")) == []
     assert broker.outcomes[0].reason == "suspended_at_open"
     assert broker.outcomes[1].cancelled_quantity == 100
+
+
+def test_default_commission_and_adverse_slippage_on_both_sides():
+    broker = NextOpenBroker()
+    market = MarketSnapshot(DATE, {'A': make_bar('A', '10')})
+    broker.submit([make_order('buy', 'A', Side.BUY, 1000), make_order('sell', 'A', Side.SELL, 1000)])
+    sell, buy = broker.match(market, Decimal('10000'))
+    assert buy.price == Decimal('10.020')
+    assert sell.price == Decimal('9.980')
+    assert buy.commission == Decimal('3.01')
+    assert sell.commission == Decimal('2.99')
+    assert buy.stamp_duty == sell.stamp_duty == 0

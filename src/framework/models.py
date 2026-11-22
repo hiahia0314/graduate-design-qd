@@ -198,9 +198,9 @@ class EquityRecord:
 
 @dataclass(frozen=True, slots=True)
 class CostModel:
-    """Configurable execution costs; defaults intentionally remain zero."""
+    """Simplified costs: 0.03% commission and 0.2% adverse slippage per side."""
 
-    commission_rate: Decimal = ZERO
+    commission_rate: Decimal = Decimal("0.0003")
     minimum_commission: Decimal = ZERO
     stamp_duty_rate: Decimal = ZERO
-    slippage: Decimal = ZERO
+    slippage: Decimal = Decimal("0.002")

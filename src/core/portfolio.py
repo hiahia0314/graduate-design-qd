@@ -19,7 +19,17 @@ LOT_SIZE = 100
 
 
 class TargetWeightPortfolio(Portfolio):
-    """Convert long-only target weights into 100-share rebalance orders."""
+    """Convert long-only target weights into 100-unit rebalance orders using forward-adjusted prices."""
+
+    def __init__(self, *, rebalance_interval: int | None = None) -> None:
+        """Optionally hold positions and only rebalance every ``rebalance_interval`` sessions."""
+        if rebalance_interval is not None and (
+            isinstance(rebalance_interval, bool) or not isinstance(rebalance_interval, int)
+            or rebalance_interval < 1
+        ):
+            raise ValueError("rebalance_interval must be a positive integer or None")
+        self.rebalance_interval = rebalance_interval
+        self._session = 0
 
     def create_orders(
         self,
@@ -27,6 +37,9 @@ class TargetWeightPortfolio(Portfolio):
         account: AccountSnapshot,
         market: MarketSnapshot,
     ) -> list[Order]:
+        self._session += 1
+        if self.rebalance_interval is not None and (self._session - 1) % self.rebalance_interval:
+            return []
         if target.timestamp != market.timestamp or account.timestamp != market.timestamp:
             raise ValueError("Target, account and market timestamps must match")
         for symbol, weight in target.weights.items():
@@ -52,6 +65,10 @@ class TargetWeightPortfolio(Portfolio):
             current = account.positions.get(symbol)
             current_quantity = current.quantity if current is not None else 0
             difference = target_quantities.get(symbol, 0) - current_quantity
+            if difference > 0:
+                difference = difference // LOT_SIZE * LOT_SIZE
+            elif current is not None:
+                difference = -min(-difference, current.quantity)
             if difference == 0:
                 continue
             orders.append(
